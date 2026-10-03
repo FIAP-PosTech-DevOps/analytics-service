@@ -9,7 +9,7 @@ Sua única função é:
 
 ## 📦 Pré-requisitos (Local)
 
-* [Python](https://www.python.org/) (versão 3.9 ou superior)
+* [Python](https://www.python.org/) (versão 3.13 ou superior)
 * **Credenciais da AWS:** Este serviço **DEVE** ter credenciais da AWS para acessar SQS e DynamoDB. Configure-as em seu terminal (via `aws configure`) ou defina as variáveis de ambiente:
     * `AWS_ACCESS_KEY_ID`
     * `AWS_SECRET_ACCESS_KEY`
@@ -103,3 +103,23 @@ INFO:Evento ... (Flag: enable-new-dashboard) salvo no DynamoDB.
 Vá até o console da AWS, abra o **DynamoDB**, selecione a tabela `ToggleMasterAnalytics` e clique em "Explore table items".
 
 Você verá os itens que o worker acabou de inserir.
+## 🔁 CI/CD e DevSecOps (Fase 3)
+
+O deploy não é mais feito com `kubectl`: a pipeline publica a imagem no ECR e atualiza a versão no repositório [toggle-master-gitops](https://github.com/FIAP-PosTech-DevOps/toggle-master-gitops), e o ArgoCD de cada ambiente sincroniza. A pipeline é compartilhada pelos 5 serviços e fica em [toggle-master-infra](https://github.com/FIAP-PosTech-DevOps/toggle-master-infra/blob/main/docs/ci-cd.md).
+
+| Workflow | Quando roda | O que faz |
+|---|---|---|
+| `ci.yml` | PR para `release/*` ou `main` | build, testes, lint, SonarQube Cloud (SAST), Snyk ou Trivy (SCA) e scan da imagem com Trivy, sem publicar |
+| `ci.yml` | push em `release/vX.Y.Z` | o mesmo + imagem `vX.Y.Z-<sha>` no ECR + deploy em **develop** |
+| `release.yml` | botão (Actions → release → Run workflow) | `criar-release`, `promover-staging` (tag `-rc.N`) e `promover-producao` (tag final) |
+| `promote.yml` | push de tag `v*` | re-scan da imagem e deploy em **staging** (`-rc.N`) ou **production** (com aprovação) |
+
+Uma vulnerabilidade **crítica** (dependência ou imagem) ou o Quality Gate do Sonar reprovado interrompem a pipeline, e nada chega ao ECR.
+
+Para rodar localmente as mesmas verificações da pipeline:
+
+```bash
+pip install -r requirements-dev.txt
+pytest --cov=.                      # testes unitários (sem banco/AWS: tudo simulado)
+flake8 .                            # lint (mesma configuração da CI: .flake8)
+```
