@@ -1,3 +1,9 @@
 [run]
 omit =
     tests/*
+
+[report]
+# Bloco só de execução local (python app.py); no contêiner quem sobe o app é o gunicorn.
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
