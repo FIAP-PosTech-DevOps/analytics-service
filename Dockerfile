@@ -13,10 +13,13 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 FROM ${BASE_REGISTRY}/python:3.13-slim
 RUN useradd --uid 1000 --create-home appuser
 WORKDIR /app
-COPY --from=builder --chown=1000:1000 /root/.local /home/appuser/.local
+# Dependências e código ficam com dono root, sem --chown: o usuário do app
+# (1000) só lê e executa. Se alguém tomar o processo, não consegue alterar
+# o código nem as bibliotecas (Sonar docker:S6504).
+COPY --from=builder /root/.local /home/appuser/.local
 # Só o código da aplicação: testes, configs de CI e docs ficam de fora
 # (ver .dockerignore).
-COPY --chown=1000:1000 app.py .
+COPY app.py .
 ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
