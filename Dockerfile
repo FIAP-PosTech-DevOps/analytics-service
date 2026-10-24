@@ -11,7 +11,11 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Stage 2: runtime enxuto e sem root.
 FROM ${BASE_REGISTRY}/python:3.13-slim
-RUN useradd --uid 1000 --create-home appuser
+# Sem pip no runtime: ele só é usado no build (stage 1). Tirar daqui remove o
+# certifi que o pip traz embutido (GHSA-6q48-6c7w-9gw2, CRÍTICA no Trivy) e um
+# gerenciador de pacotes que a aplicação não usa.
+RUN python -m pip uninstall --yes --no-cache-dir pip \
+    && useradd --uid 1000 --create-home appuser
 WORKDIR /app
 # Dependências e código ficam com dono root, sem --chown: o usuário do app
 # (1000) só lê e executa. Se alguém tomar o processo, não consegue alterar
