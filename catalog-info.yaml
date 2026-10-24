@@ -1,0 +1,29 @@
+# Entidade deste repositório no Backstage (toggle-master-backstage).
+# As anotações ligam as abas do portal: pipelines (GitHub Actions), pods
+# (Kubernetes, nos clusters no ar), deploy por ambiente (Argo CD) e docs
+# (TechDocs, a partir do mkdocs.yml).
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: analytics-service
+  description: Worker: consome os eventos do SQS e grava no DynamoDB.
+  tags:
+    - python
+  annotations:
+    github.com/project-slug: FIAP-PosTech-DevOps/analytics-service
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/kubernetes-namespace: analytics-service
+    backstage.io/kubernetes-label-selector: app=analytics-service
+    argocd/app-name: analytics-service
+  links:
+    - url: https://github.com/FIAP-PosTech-DevOps/toggle-master-gitops/tree/main/apps/analytics-service
+      title: Manifestos (GitOps)
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: group:grupo-fase3
+  system: togglemaster
+  dependsOn:
+    - resource:default/evaluation-events
+    - resource:default/analytics-table
